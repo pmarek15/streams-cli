@@ -4,48 +4,45 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-    "fmt"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
-var (
-    cfgFile     string
-    rootCmd = &cobra.Command{
-        Use:   "stream",
-        Short: "A brief description of your application",
-        Long: `A longer description that spans multiple lines and likely contains
-            examples and usage of using your application. For example:
+type kafkaConfig struct {
+    BootstrapServers string `yaml:"bootstrapServers"`
+}
 
-            Cobra is a CLI library for Go that empowers applications.
-            This application is a tool to generate the needed files
-            to quickly create a Cobra application.`,
-        // Uncomment the following line if your bare application
-        // has an action associated with it:
-        Run: func(cmd *cobra.Command, args []string) { },
+type config struct {
+    KafkaConfig kafkaConfig `yaml:"kafka"`
+}
+
+var (
+    cfgFile string
+    rootCmd = &cobra.Command{
+            Use:   "stream",
+            Short: "CLI app for testing streaming technologies",
+            Long: "",
+            Run: func(cmd *cobra.Command, args []string) { },
     }
 )
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
+var Config config
+
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+        fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
 func init() {
     cobra.OnInitialize(initConfig)
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
 }
 
 func initConfig() {
@@ -53,6 +50,30 @@ func initConfig() {
         cfgFile = "config.yaml"
     }
 
+    config, err := parseConfig(cfgFile)
+	if err != nil {
+        fmt.Fprintln(os.Stderr, err)
+        return
+    }
 
-    fmt.Printf("Config is %s\n", cfgFile)
+    // Store parsed config into a var
+    Config = config
+}
+
+func parseConfig(file string) (config, error) {
+    rawData, err := os.ReadFile(file)
+
+    if err != nil {
+        return config{}, err
+    }
+
+    var configData config
+
+    err = yaml.Unmarshal(rawData, &configData)
+
+    if err != nil {
+        return config{}, err
+    }
+
+    return configData, nil
 }
