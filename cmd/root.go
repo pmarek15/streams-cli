@@ -15,6 +15,9 @@ type kafkaConfig struct {
     BootstrapServers string `yaml:"bootstrapServers"`
 }
 
+type pulsarConfig struct {
+    Url string `yaml:"url"`
+}
 
 type redpandaConfig struct {
     BootstrapServers string `yaml:"bootstrapServers"`
@@ -22,6 +25,7 @@ type redpandaConfig struct {
 
 type config struct {
     KafkaConfig kafkaConfig `yaml:"kafka"`
+    PulsarConfig pulsarConfig `yaml:"pulsar"` 
     RedpandaConfig redpandaConfig `yaml:"redpanda"`
 }
 

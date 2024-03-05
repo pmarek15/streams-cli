@@ -51,6 +51,8 @@ var(
             switch target {
                 case targetEnumKafka:
                     internal.ConnectKafka(Config.KafkaConfig.BootstrapServers, numberOfMessages, sizeOfMessage)
+                case targetEnumPulsar:
+                    internal.ConnectPulsar(Config.PulsarConfig.Url, numberOfMessages, sizeOfMessage)
                 case targetEnumRedpanda:
                     internal.ConnectKafka(Config.RedpandaConfig.BootstrapServers, numberOfMessages, sizeOfMessage)
             }

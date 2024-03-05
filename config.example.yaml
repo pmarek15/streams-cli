@@ -1,4 +1,6 @@
 #kafka:
 #  bootstrapServers: 'localhost:9092'
+#pulsar:
+#  url: 'pulsar://localhost:6650'
 #redpanda:
 #  bootstrapServers: 'localhost:9092'
