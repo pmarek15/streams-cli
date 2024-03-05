@@ -11,7 +11,7 @@ import (
 )
 
 
-func Connect(BootstrapServers string, numberOfMessages int, sizeOfMessage int) {
+func ConnectKafka(BootstrapServers string, numberOfMessages int, sizeOfMessage int) {
     p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": BootstrapServers})
 
     if err != nil {

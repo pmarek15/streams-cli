@@ -15,8 +15,14 @@ type kafkaConfig struct {
     BootstrapServers string `yaml:"bootstrapServers"`
 }
 
+
+type redpandaConfig struct {
+    BootstrapServers string `yaml:"bootstrapServers"`
+}
+
 type config struct {
     KafkaConfig kafkaConfig `yaml:"kafka"`
+    RedpandaConfig redpandaConfig `yaml:"redpanda"`
 }
 
 var (

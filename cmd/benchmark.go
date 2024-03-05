@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 
     "stream/internal"
 
@@ -51,9 +50,9 @@ var(
         Run: func(cmd *cobra.Command, args []string) {
             switch target {
                 case targetEnumKafka:
-                    internal.Connect(Config.KafkaConfig.BootstrapServers, numberOfMessages, sizeOfMessage)
-                default:
-                    fmt.Println("Default")
+                    internal.ConnectKafka(Config.KafkaConfig.BootstrapServers, numberOfMessages, sizeOfMessage)
+                case targetEnumRedpanda:
+                    internal.ConnectKafka(Config.RedpandaConfig.BootstrapServers, numberOfMessages, sizeOfMessage)
             }
         },
     }
