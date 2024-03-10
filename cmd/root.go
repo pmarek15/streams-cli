@@ -4,33 +4,43 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"fmt"
-	"os"
+	"errors"
+	"log"
+	"stream/internal"
 
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
-type kafkaConfig struct {
-    BootstrapServers string `yaml:"bootstrapServers"`
+type targetEnum string
+const (
+    targetEnumKafka targetEnum = "kafka"
+    targetEnumPulsar targetEnum = "pulsar"
+    targetEnumRedpanda targetEnum = "redpanda"
+)
+
+func (e *targetEnum) String() string {
+    return string(*e)
 }
 
-type pulsarConfig struct {
-    Url string `yaml:"url"`
+func (e *targetEnum) Set(v string) error {
+    switch v {
+        case "kafka", "pulsar", "redpanda":
+            *e = targetEnum(v)
+            return nil
+    default:
+        return errors.New(`must be one of "kafka", "pulsar", "redpanda"`)
+    }
 }
 
-type redpandaConfig struct {
-    BootstrapServers string `yaml:"bootstrapServers"`
+func (e *targetEnum) Type() string {
+    return "targetEnum"
 }
 
-type config struct {
-    KafkaConfig kafkaConfig `yaml:"kafka"`
-    PulsarConfig pulsarConfig `yaml:"pulsar"` 
-    RedpandaConfig redpandaConfig `yaml:"redpanda"`
-}
 
 var (
     cfgFile string
+    target targetEnum
+    config internal.Config
     rootCmd = &cobra.Command{
             Use:   "stream",
             Short: "CLI app for testing streaming technologies",
@@ -39,13 +49,10 @@ var (
     }
 )
 
-var Config config
-
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-        fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+        log.Fatal(err)
 	}
 }
 
@@ -53,6 +60,9 @@ func init() {
     cobra.OnInitialize(initConfig)
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
+
+    benchmarkCmd.Flags().VarP(&target, "target", "t", "Target for benchmark [kafka, redpanda, pulsar]")
+    benchmarkCmd.MarkFlagRequired("target")
 }
 
 func initConfig() {
@@ -60,30 +70,10 @@ func initConfig() {
         cfgFile = "config.yaml"
     }
 
-    config, err := parseConfig(cfgFile)
+    cfg, err := internal.ParseConfig(cfgFile)
 	if err != nil {
-        fmt.Fprintln(os.Stderr, err)
-        return
+        log.Fatal(err)
     }
 
-    // Store parsed config into a var
-    Config = config
-}
-
-func parseConfig(file string) (config, error) {
-    rawData, err := os.ReadFile(file)
-
-    if err != nil {
-        return config{}, err
-    }
-
-    var configData config
-
-    err = yaml.Unmarshal(rawData, &configData)
-
-    if err != nil {
-        return config{}, err
-    }
-
-    return configData, nil
+    config = cfg
 }

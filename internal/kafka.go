@@ -1,9 +1,10 @@
 package internal
 
 import (
-	"crypto/rand"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"time"
 
@@ -11,11 +12,10 @@ import (
 )
 
 
-func ConnectKafka(BootstrapServers string, numberOfMessages int, sizeOfMessage int) {
-    p, err := kafka.NewProducer(&kafka.ConfigMap{"bootstrap.servers": BootstrapServers})
-
+func ConnectKafka(kafkaConfig kafka.ConfigMap, numberOfMessages int, sizeOfMessage int) Benchmark {
+    p, err := kafka.NewProducer(&kafkaConfig)
     if err != nil {
-        panic(err)
+        log.Fatal(err)
     }
 
     done := make(chan bool)
@@ -49,9 +49,64 @@ func ConnectKafka(BootstrapServers string, numberOfMessages int, sizeOfMessage i
     }
     <-done
 
-    elapsed := time.Since(start)
+    duration := time.Since(start)
 
-    messagesPerSecond := (float64(numberOfMessages) / elapsed.Seconds())
-    throughput := (float64(numberOfMessages) * float64(sizeOfMessage)) / elapsed.Seconds()
-    fmt.Printf("Time taken [s]: %f\nMessages/s: %f\nThroughput [MB/s]: %.2f\n", elapsed.Seconds(), messagesPerSecond, throughput / 1000000)
+    p.Flush(5000)
+
+    return NewBenchmark(duration, numberOfMessages, sizeOfMessage)
+}
+
+type producerMessage struct {
+    Number float64 `json:"number"`
+}
+
+func ProduceKafka(kafkaConfig kafka.ConfigMap, max int) {
+    producer, err := kafka.NewProducer(&kafkaConfig)
+
+    topic := "produce"
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer producer.Close()
+
+    for {
+        randInt := rand.Intn(max)
+        randFloat := rand.Float64()
+
+        randNumber := float64(randInt) + randFloat
+
+        message, _ := json.Marshal(&producerMessage{Number: randNumber})
+
+        fmt.Println(string(message))
+        producer.Produce(&kafka.Message{
+            TopicPartition: kafka.TopicPartition{Topic: &topic},
+            Value: []byte(string(message)),
+        }, nil)
+
+        time.Sleep(1 * time.Second)
+    }
+}
+
+func ConsumeKafka(kafkaConfig kafka.ConfigMap) {
+    consumer, err := kafka.NewConsumer(&kafkaConfig)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    defer consumer.Close()
+
+    consumer.Subscribe("produce", nil)
+
+    for {
+        message, err := consumer.ReadMessage(time.Second)
+
+        if err == nil {
+            log.Printf("Message on %s: %s\n", message.TopicPartition, string(message.Value))
+        } else {
+            fmt.Printf("Consumer error: %v (%v)\n", err, message)
+        }
+    }
 }
