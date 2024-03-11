@@ -15,5 +15,5 @@ Build the binary
 ```
 $ go build
 ```
-Binary file (`streams`) will be created insite root directory of the repository. Simply run it inside of your terminal.
+Binary file (`stream`) will be created insite root directory of the repository. Simply run it inside of your terminal.
 For additional info you can use `--help` flag
