@@ -10,19 +10,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// consumeCmd represents the consume command
 var consumeCmd = &cobra.Command{
 	Use:   "consume",
 	Short: "Command to create consumer",
-	Long: ``,
+	Long:  ``,
 
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println("consume called")
 
-        internal.ConsumeKafka(config.KafkaConfig) //TODO finish implementation for other brokers
+		switch target {
+		case targetEnumKafka:
+			internal.ConsumeKafka(config.KafkaConfig, frequency)
+		case targetEnumPulsar:
+			internal.ConsumePulsar(config.PulsarConfig)
+		case targetEnumRedpanda:
+			internal.ConsumeKafka(config.RedpandaConfig, frequency)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(consumeCmd)
+
+	consumeCmd.Flags().IntVarP(
+		&frequency,
+		"frequency",
+		"f",
+		1000,
+		"Frequency of producing the messages in milliseconds",
+	)
+	consumeCmd.MarkFlagRequired("frequency")
 }

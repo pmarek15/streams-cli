@@ -1,6 +1,8 @@
 #kafka:
-#  bootstrapServers: 'localhost:9092'
+#  bootstrap.servers: 'localhost:9092'
+#  group.id: 'my-group'
 #pulsar:
 #  url: 'pulsar://localhost:6650'
 #redpanda:
-#  bootstrapServers: 'localhost:9092'
+#  bootstrap.servers: 'localhost:9092'
+#  group.id: 'my-group'

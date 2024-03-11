@@ -2,111 +2,130 @@ package internal
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"math/rand"
-	"os"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-
-func ConnectKafka(kafkaConfig kafka.ConfigMap, numberOfMessages int, sizeOfMessage int) Benchmark {
-    p, err := kafka.NewProducer(&kafkaConfig)
-    if err != nil {
-        log.Fatal(err)
-    }
-
-    done := make(chan bool)
-
-    go func() {
-        var sentCount int
-        for e := range p.Events() {
-            msg := e.(*kafka.Message)
-
-            if msg.TopicPartition.Error != nil {
-                log.Printf("delivery report error: %v", msg.TopicPartition.Error)
-                os.Exit(1)
-            }
-            sentCount++
-            if sentCount >= numberOfMessages {
-                done <- true
-            }
-        }
-    }()
-
-    defer p.Close()
-
-    value := make([]byte, sizeOfMessage)
-    rand.Read(value)
-
-    topic := "myTopic"
-
-    start := time.Now()
-    for i := 0; i < numberOfMessages; i++ {
-        p.ProduceChannel() <- &kafka.Message{TopicPartition: kafka.TopicPartition{Topic: &topic}, Value: value}
-    }
-    <-done
-
-    duration := time.Since(start)
-
-    p.Flush(5000)
-
-    return NewBenchmark(duration, numberOfMessages, sizeOfMessage)
-}
-
 type producerMessage struct {
-    Number float64 `json:"number"`
+	Number    float64   `json:"number"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-func ProduceKafka(kafkaConfig kafka.ConfigMap, max int) {
-    producer, err := kafka.NewProducer(&kafkaConfig)
+func ConnectKafka(
+	kafkaConfig kafka.ConfigMap,
+	numberOfMessages int,
+	sizeOfMessage int,
+) Benchmark {
+	p, err := kafka.NewProducer(&kafkaConfig)
 
-    topic := "produce"
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    if err != nil {
-        log.Fatal(err)
-    }
+	defer p.Close()
 
-    defer producer.Close()
+	done := make(chan bool)
 
-    for {
-        randInt := rand.Intn(max)
-        randFloat := rand.Float64()
+	go func() {
+		var sentCount int
+		for e := range p.Events() {
+			msg := e.(*kafka.Message)
 
-        randNumber := float64(randInt) + randFloat
+			if msg.TopicPartition.Error != nil {
+				log.Fatalf("Error: %v", msg.TopicPartition.Error)
+			}
+			sentCount++
+			if sentCount >= numberOfMessages {
+				done <- true
+			}
+		}
+	}()
 
-        message, _ := json.Marshal(&producerMessage{Number: randNumber})
+	value := make([]byte, sizeOfMessage)
+	rand.Read(value)
 
-        fmt.Println(string(message))
-        producer.Produce(&kafka.Message{
-            TopicPartition: kafka.TopicPartition{Topic: &topic},
-            Value: []byte(string(message)),
-        }, nil)
+	topic := "myTopic"
 
-        time.Sleep(1 * time.Second)
-    }
+	start := time.Now()
+	for i := 0; i < numberOfMessages; i++ {
+		p.ProduceChannel() <- &kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &topic},
+			Value:          value,
+		}
+	}
+	<-done
+
+	duration := time.Since(start)
+
+	p.Flush(5000)
+
+	return NewBenchmark(duration, numberOfMessages, sizeOfMessage)
 }
 
-func ConsumeKafka(kafkaConfig kafka.ConfigMap) {
-    consumer, err := kafka.NewConsumer(&kafkaConfig)
+func ProduceKafka(kafkaConfig kafka.ConfigMap, frequency int, max int) {
+	producer, err := kafka.NewProducer(&kafkaConfig)
 
-    if err != nil {
-        log.Fatal(err)
-    }
+	if err != nil {
+		log.Fatal(err)
+	}
 
-    defer consumer.Close()
+	defer producer.Close()
 
-    consumer.Subscribe("produce", nil)
+	topic := "produce"
+	for {
+		randInt := rand.Intn(max)
+		randFloat := rand.Float64()
 
-    for {
-        message, err := consumer.ReadMessage(time.Second)
+		randNumber := float64(randInt) + randFloat
 
-        if err == nil {
-            log.Printf("Message on %s: %s\n", message.TopicPartition, string(message.Value))
-        } else {
-            fmt.Printf("Consumer error: %v (%v)\n", err, message)
-        }
-    }
+		message, _ := json.Marshal(
+			&producerMessage{Number: randNumber, CreatedAt: time.Now()},
+		)
+
+		log.Printf("Producing message: %s\n", string(message))
+		producer.Produce(&kafka.Message{
+			TopicPartition: kafka.TopicPartition{Topic: &topic},
+			Value:          []byte(string(message)),
+		}, nil)
+
+		time.Sleep(time.Duration(frequency) * time.Millisecond)
+	}
+}
+
+func ConsumeKafka(kafkaConfig kafka.ConfigMap, frequency int) {
+	consumer, err := kafka.NewConsumer(&kafkaConfig)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer consumer.Close()
+
+	consumer.Subscribe("produce", nil)
+
+	run := true
+	for run {
+		ev := consumer.Poll(frequency) // Poll frequency is in [ms]
+		switch e := ev.(type) {
+		case *kafka.Message:
+			message := producerMessage{}
+
+			json.Unmarshal([]byte(string(e.Value)), &message)
+
+			log.Printf(
+				"Message on %s: %s\nLatency [ms]: %d\n\n",
+				e.TopicPartition,
+				string(e.Value),
+				time.Since(message.CreatedAt).Milliseconds(),
+			)
+		case kafka.Error:
+			log.Printf("Error: %v\n", e)
+			run = false
+		case kafka.PartitionEOF:
+			log.Fatalf("Reached %v\n", e)
+		}
+	}
 }

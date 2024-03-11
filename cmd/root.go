@@ -12,68 +12,70 @@ import (
 )
 
 type targetEnum string
+
 const (
-    targetEnumKafka targetEnum = "kafka"
-    targetEnumPulsar targetEnum = "pulsar"
-    targetEnumRedpanda targetEnum = "redpanda"
+	targetEnumKafka    targetEnum = "kafka"
+	targetEnumPulsar   targetEnum = "pulsar"
+	targetEnumRedpanda targetEnum = "redpanda"
 )
 
 func (e *targetEnum) String() string {
-    return string(*e)
+	return string(*e)
 }
 
 func (e *targetEnum) Set(v string) error {
-    switch v {
-        case "kafka", "pulsar", "redpanda":
-            *e = targetEnum(v)
-            return nil
-    default:
-        return errors.New(`must be one of "kafka", "pulsar", "redpanda"`)
-    }
+	switch v {
+	case "kafka", "pulsar", "redpanda":
+		*e = targetEnum(v)
+		return nil
+	default:
+		return errors.New(`must be one of "kafka", "pulsar", "redpanda"`)
+	}
 }
 
 func (e *targetEnum) Type() string {
-    return "targetEnum"
+	return "targetEnum"
 }
 
-
 var (
-    cfgFile string
-    target targetEnum
-    config internal.Config
-    rootCmd = &cobra.Command{
-            Use:   "stream",
-            Short: "CLI app for testing streaming technologies",
-            Long: "",
-            Run: func(cmd *cobra.Command, args []string) { },
-    }
+	cfgFile string
+	target  targetEnum
+	config  internal.Config
+	rootCmd = &cobra.Command{
+		Use:   "stream",
+		Short: "CLI app for testing streaming technologies",
+		Long:  "",
+		Run:   func(cmd *cobra.Command, args []string) {},
+	}
 )
 
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-        log.Fatal(err)
+		log.Fatal(err)
 	}
 }
 
 func init() {
-    cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
+	rootCmd.PersistentFlags().
+		StringVar(&cfgFile, "config", "", "config file (default is ./config.yaml)")
 
-    benchmarkCmd.Flags().VarP(&target, "target", "t", "Target for benchmark [kafka, redpanda, pulsar]")
-    benchmarkCmd.MarkFlagRequired("target")
+	rootCmd.PersistentFlags().
+		VarP(&target, "target", "t", "Target for benchmark [kafka, redpanda, pulsar]")
+	rootCmd.MarkFlagRequired("target")
 }
 
 func initConfig() {
-    if cfgFile == "" {
-        cfgFile = "config.yaml"
-    }
+	if cfgFile == "" {
+		cfgFile = "config.yaml"
+	}
 
-    cfg, err := internal.ParseConfig(cfgFile)
+	cfg, err := internal.ParseConfig(cfgFile)
 	if err != nil {
-        log.Fatal(err)
-    }
+		log.Fatal(err)
+	}
 
-    config = cfg
+	config = cfg
 }

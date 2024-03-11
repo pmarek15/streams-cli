@@ -10,18 +10,34 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var frequency int
 var produceCmd = &cobra.Command{
 	Use:   "produce",
 	Short: "Command to create a producer",
-	Long: ``,
-	Run: func(cmd *cobra.Command, args []string) {
+	Long:  ``,
+	Run: func(_ *cobra.Command, _ []string) {
 		fmt.Println("produce called")
 
-        internal.ProduceKafka(config.KafkaConfig, 10) //TODO Finish implementation for other brokers
+		switch target {
+		case targetEnumKafka:
+			internal.ProduceKafka(config.KafkaConfig, frequency, 10)
+		case targetEnumPulsar:
+			internal.ProducePulsar(config.PulsarConfig, frequency, 10)
+		case targetEnumRedpanda:
+			internal.ProduceKafka(config.KafkaConfig, frequency, 10)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(produceCmd)
 
+	produceCmd.Flags().IntVarP(
+		&frequency,
+		"frequency",
+		"f",
+		1000,
+		"Frequency of producing the messages in milliseconds",
+	)
+	produceCmd.MarkFlagRequired("frequency")
 }
