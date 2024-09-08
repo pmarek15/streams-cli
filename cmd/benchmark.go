@@ -1,10 +1,8 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"stream/internal"
+	"stream/internal/connector"
 
 	"github.com/spf13/cobra"
 )
@@ -21,19 +19,19 @@ var (
 
 			switch target {
 			case targetEnumKafka:
-				benchmark = internal.ConnectKafka(
+				benchmark = connector.ConnectKafka(
 					config.KafkaConfig,
 					numberOfMessages,
 					sizeOfMessage,
 				)
 			case targetEnumPulsar:
-				benchmark = internal.ConnectPulsar(
+				benchmark = connector.ConnectPulsar(
 					config.PulsarConfig,
 					numberOfMessages,
 					sizeOfMessage,
 				)
 			case targetEnumRedpanda:
-				benchmark = internal.ConnectKafka(
+				benchmark = connector.ConnectKafka(
 					config.RedpandaConfig,
 					numberOfMessages,
 					sizeOfMessage,

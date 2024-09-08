@@ -1,9 +1,10 @@
-package internal
+package connector
 
 import (
 	"encoding/json"
 	"log"
 	"math/rand"
+	"stream/internal"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -18,7 +19,7 @@ func ConnectKafka(
 	kafkaConfig kafka.ConfigMap,
 	numberOfMessages int,
 	sizeOfMessage int,
-) Benchmark {
+) internal.Benchmark {
 	p, err := kafka.NewProducer(&kafkaConfig)
 
 	if err != nil {
@@ -62,7 +63,7 @@ func ConnectKafka(
 
 	p.Flush(5000)
 
-	return NewBenchmark(duration, numberOfMessages, sizeOfMessage)
+	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage)
 }
 
 func ProduceKafka(kafkaConfig kafka.ConfigMap, frequency int, max int) {

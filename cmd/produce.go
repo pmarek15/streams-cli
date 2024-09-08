@@ -1,11 +1,9 @@
-/*
-Copyright © 2024 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"fmt"
-	"stream/internal"
+	"stream/internal/connector"
+	"stream/internal/pulsar"
 
 	"github.com/spf13/cobra"
 )
@@ -20,11 +18,12 @@ var produceCmd = &cobra.Command{
 
 		switch target {
 		case targetEnumKafka:
-			internal.ProduceKafka(config.KafkaConfig, frequency, 10)
+			connector.ProduceKafka(config.KafkaConfig, frequency, 10)
 		case targetEnumPulsar:
-			internal.ProducePulsar(config.PulsarConfig, frequency, 10)
+			pulsar.Produce(config.PulsarConfig, frequency, 10)
+			//connector.ProducePulsar(config.PulsarConfig, frequency, 10)
 		case targetEnumRedpanda:
-			internal.ProduceKafka(config.KafkaConfig, frequency, 10)
+			connector.ProduceKafka(config.KafkaConfig, frequency, 10)
 		}
 	},
 }

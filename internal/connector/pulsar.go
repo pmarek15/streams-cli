@@ -1,10 +1,11 @@
-package internal
+package connector
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"stream/internal"
 
 	"log"
 	"time"
@@ -13,10 +14,10 @@ import (
 )
 
 func ConnectPulsar(
-	pulsarConfig PulsarConfig,
+	pulsarConfig internal.PulsarConfig,
 	numberOfMessages int,
 	sizeOfMessage int,
-) Benchmark {
+) internal.Benchmark {
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: pulsarConfig.Url,
 	})
@@ -74,10 +75,10 @@ func ConnectPulsar(
 
 	producer.Flush()
 
-	return NewBenchmark(duration, numberOfMessages, sizeOfMessage)
+	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage)
 }
 
-func ProducePulsar(pulsarConfig PulsarConfig, frequency int, max int) {
+func ProducePulsar(pulsarConfig internal.PulsarConfig, frequency int, max int) {
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: pulsarConfig.Url,
 	})
@@ -129,7 +130,7 @@ func ProducePulsar(pulsarConfig PulsarConfig, frequency int, max int) {
 	}
 }
 
-func ConsumePulsar(pulsarConfig PulsarConfig) {
+func ConsumePulsar(pulsarConfig internal.PulsarConfig) {
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: pulsarConfig.Url,
 	})
