@@ -2,7 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"stream/internal/connector"
+	"stream/internal/kafka"
+	"stream/internal/pulsar"
 
 	"github.com/spf13/cobra"
 )
@@ -17,11 +18,11 @@ var consumeCmd = &cobra.Command{
 
 		switch target {
 		case targetEnumKafka:
-			connector.ConsumeKafka(config.KafkaConfig, frequency)
+			kafka.Consume(config.KafkaConfig, frequency)
 		case targetEnumPulsar:
-			connector.ConsumePulsar(config.PulsarConfig)
+			pulsar.Consume(config.PulsarConfig)
 		case targetEnumRedpanda:
-			connector.ConsumeKafka(config.RedpandaConfig, frequency)
+			kafka.Consume(config.RedpandaConfig, frequency)
 		}
 	},
 }

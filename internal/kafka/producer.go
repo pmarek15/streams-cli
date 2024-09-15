@@ -10,7 +10,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func ProduceKafka(kafkaConfig kafka.ConfigMap, frequency int, max int) {
+func Produce(kafkaConfig kafka.ConfigMap, frequency int, max int) {
 	producer, err := kafka.NewProducer(&kafkaConfig)
 
 	if err != nil {
