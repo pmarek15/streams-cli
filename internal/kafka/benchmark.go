@@ -1,4 +1,4 @@
-package connector
+package kafka
 
 import (
 	"log"
@@ -9,27 +9,31 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
-func ConnectKafka(
+// Benchmark sends specified number of messages against Kafka and returns the Benchmark type as result
+func Benchmark(
 	kafkaConfig kafka.ConfigMap,
 	numberOfMessages int,
 	sizeOfMessage int,
 ) internal.Benchmark {
-	p, err := kafka.NewProducer(&kafkaConfig)
+	producer, err := kafka.NewProducer(&kafkaConfig)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	defer p.Close()
+	defer producer.Close()
 
 	done := make(chan bool)
 
+	errorCount := 0
+
 	go func() {
 		var sentCount int
-		for e := range p.Events() {
+		for e := range producer.Events() {
 			msg := e.(*kafka.Message)
 
 			if msg.TopicPartition.Error != nil {
+				errorCount++
 				log.Fatalf("Error: %v", msg.TopicPartition.Error)
 			}
 			sentCount++
@@ -46,7 +50,7 @@ func ConnectKafka(
 
 	start := time.Now()
 	for i := 0; i < numberOfMessages; i++ {
-		p.ProduceChannel() <- &kafka.Message{
+		producer.ProduceChannel() <- &kafka.Message{
 			TopicPartition: kafka.TopicPartition{Topic: &topic},
 			Value:          value,
 		}
@@ -55,7 +59,7 @@ func ConnectKafka(
 
 	duration := time.Since(start)
 
-	p.Flush(5000)
+	producer.Flush(5000)
 
-	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage)
+	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage, errorCount)
 }

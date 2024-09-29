@@ -1,28 +1,21 @@
-package connector
+package pulsar
 
 import (
 	"context"
+	"log"
 	"math/rand"
 	"stream/internal"
-
-	"log"
 	"time"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 )
 
-func ConnectPulsar(
+func Benchmark(
 	pulsarConfig internal.PulsarConfig,
 	numberOfMessages int,
 	sizeOfMessage int,
 ) internal.Benchmark {
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: pulsarConfig.Url,
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	client := GetClient(pulsarConfig)
 
 	defer client.Close()
 
@@ -50,12 +43,15 @@ func ConnectPulsar(
 
 	start := time.Now()
 
+	errorCount := 0
+
 	for i := 0; i < numberOfMessages; i++ {
 		producer.SendAsync(
 			ctx,
 			&msg,
 			func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
 				if err != nil {
+					errorCount++
 					log.Fatal(err)
 				}
 
@@ -73,5 +69,5 @@ func ConnectPulsar(
 
 	producer.Flush()
 
-	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage)
+	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage, errorCount)
 }

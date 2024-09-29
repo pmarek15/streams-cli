@@ -4,21 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/apache/pulsar-client-go/pulsar"
 	"log"
 	"math/rand"
 	"stream/internal"
 	"time"
+
+	"github.com/apache/pulsar-client-go/pulsar"
 )
 
 func Produce(pulsarConfig internal.PulsarConfig, frequency int, max int) {
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: pulsarConfig.Url,
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	client := GetClient(pulsarConfig)
 
 	defer client.Close()
 

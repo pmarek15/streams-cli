@@ -3,20 +3,15 @@ package pulsar
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/apache/pulsar-client-go/pulsar"
 	"log"
 	"stream/internal"
 	"time"
+
+	"github.com/apache/pulsar-client-go/pulsar"
 )
 
 func Consume(pulsarConfig internal.PulsarConfig) {
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: pulsarConfig.Url,
-	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	client := GetClient(pulsarConfig)
 
 	defer client.Close()
 
