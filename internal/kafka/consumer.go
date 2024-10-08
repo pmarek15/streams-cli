@@ -3,7 +3,6 @@ package kafka
 import (
 	"encoding/json"
 	"log"
-	"stream/internal"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -20,7 +19,10 @@ func Consume(kafkaConfig kafka.ConfigMap, frequency int) {
 
 	err = consumer.Subscribe("produce", nil)
 	if err != nil {
-		log.Fatalf("Failed to subscribe to the producer: %s", err)
+		log.Fatalf(
+			"Failed to subscribe to the producer: %s",
+			err,
+		)
 		return
 	}
 
@@ -29,9 +31,9 @@ func Consume(kafkaConfig kafka.ConfigMap, frequency int) {
 		ev := consumer.Poll(frequency) // Poll frequency is in [ms]
 		switch e := ev.(type) {
 		case *kafka.Message:
-			message := internal.Message{}
+			message := message{}
 
-			json.Unmarshal(e.Value, &message)
+			_ = json.Unmarshal(e.Value, &message)
 
 			log.Printf(
 				"Message on %s: %s\nLatency [ms]: %d\n\n",

@@ -4,11 +4,15 @@ import (
 	"encoding/json"
 	"log"
 	"math/rand"
-	"stream/internal"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
+
+type message struct {
+	Number    float64   `json:"number"`
+	CreatedAt time.Time `json:"created_at"`
+}
 
 func Produce(kafkaConfig kafka.ConfigMap, frequency int, max int) {
 	producer, err := kafka.NewProducer(&kafkaConfig)
@@ -27,7 +31,7 @@ func Produce(kafkaConfig kafka.ConfigMap, frequency int, max int) {
 		randNumber := float64(randInt) + randFloat
 
 		message, _ := json.Marshal(
-			&internal.Message{Number: randNumber, CreatedAt: time.Now()},
+			&message{Number: randNumber, CreatedAt: time.Now()},
 		)
 
 		log.Printf("Producing message: %s\n", string(message))

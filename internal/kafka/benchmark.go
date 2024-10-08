@@ -1,8 +1,8 @@
 package kafka
 
 import (
+	"crypto/rand"
 	"log"
-	"math/rand"
 	"stream/internal"
 	"time"
 
@@ -61,5 +61,10 @@ func Benchmark(
 
 	producer.Flush(5000)
 
-	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage, errorCount)
+	return internal.NewBenchmark(
+		duration,
+		numberOfMessages,
+		sizeOfMessage,
+		errorCount,
+	)
 }

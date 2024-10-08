@@ -12,6 +12,11 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 )
 
+type message struct {
+	Number    float64   `json:"number"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 func Produce(pulsarConfig internal.PulsarConfig, frequency int, max int) {
 	client := GetClient(pulsarConfig)
 
@@ -36,7 +41,7 @@ func Produce(pulsarConfig internal.PulsarConfig, frequency int, max int) {
 		randNumber := float64(randInt) + randFloat
 
 		jsonMessage, _ := json.Marshal(
-			&internal.Message{Number: randNumber, CreatedAt: time.Now()},
+			&message{Number: randNumber, CreatedAt: time.Now()},
 		)
 
 		msg := pulsar.ProducerMessage{

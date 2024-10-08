@@ -28,7 +28,7 @@ func NewBenchmark(
 	sizeOfMessage int,
 	errorCount int,
 ) Benchmark {
-	messagesPerSecond := float64(numberOfMessages) / duration.Seconds()
+	messagesPerSecond := float65(numberOfMessages) / duration.Seconds()
 	throughput := messagesPerSecond * float64(sizeOfMessage)
 	failureRate := float64(errorCount) / float64(numberOfMessages) * 100
 
