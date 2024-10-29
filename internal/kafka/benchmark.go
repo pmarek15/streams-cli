@@ -1,6 +1,7 @@
 package kafka
 
 import (
+	"context"
 	"crypto/rand"
 	"log"
 	"stream/internal"
@@ -12,7 +13,7 @@ import (
 // Benchmark sends specified number of messages against Kafka and returns the Benchmark type as result
 func Benchmark(
 	kafkaConfig kafka.ConfigMap,
-	numberOfMessages int,
+	duration int,
 	sizeOfMessage int,
 ) internal.Benchmark {
 	producer, err := kafka.NewProducer(&kafkaConfig)
@@ -25,21 +26,26 @@ func Benchmark(
 
 	done := make(chan bool)
 
+	messageCount := 0
 	errorCount := 0
 
+	ctx, cancel := context.WithTimeout(
+		context.Background(),
+		time.Duration(duration)*time.Second,
+	)
+
+	defer cancel()
+
 	go func() {
-		var sentCount int
 		for e := range producer.Events() {
 			msg := e.(*kafka.Message)
 
 			if msg.TopicPartition.Error != nil {
 				errorCount++
-				log.Fatalf("Error: %v", msg.TopicPartition.Error)
+				log.Printf("Error: %v", msg.TopicPartition.Error)
+				continue
 			}
-			sentCount++
-			if sentCount >= numberOfMessages {
-				done <- true
-			}
+			messageCount++
 		}
 	}()
 
@@ -49,21 +55,28 @@ func Benchmark(
 	topic := "myTopic"
 
 	start := time.Now()
-	for i := 0; i < numberOfMessages; i++ {
-		producer.ProduceChannel() <- &kafka.Message{
-			TopicPartition: kafka.TopicPartition{Topic: &topic},
-			Value:          value,
+
+	for {
+		select {
+		case <-ctx.Done():
+			done <- true
+			goto Complete
+		default:
+			producer.ProduceChannel() <- &kafka.Message{
+				TopicPartition: kafka.TopicPartition{Topic: &topic},
+				Value:          value,
+			}
 		}
 	}
-	<-done
 
-	duration := time.Since(start)
+Complete:
+	<-done
 
 	producer.Flush(5000)
 
 	return internal.NewBenchmark(
-		duration,
-		numberOfMessages,
+		time.Since(start),
+		messageCount,
 		sizeOfMessage,
 		errorCount,
 	)

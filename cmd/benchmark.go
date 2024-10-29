@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	numberOfMessages int
-	sizeOfMessage    int
-	benchmarkCmd     = &cobra.Command{
+	duration      int
+	sizeOfMessage int
+	benchmarkCmd  = &cobra.Command{
 		Use:   "benchmark",
 		Short: "Data streaming technology benchmark",
 		Long:  ``,
@@ -22,19 +22,19 @@ var (
 			case targetEnumKafka:
 				benchmark = kafka.Benchmark(
 					config.KafkaConfig,
-					numberOfMessages,
+					duration,
 					sizeOfMessage,
 				)
 			case targetEnumPulsar:
 				benchmark = pulsar.Benchmark(
 					config.PulsarConfig,
-					numberOfMessages,
+					duration,
 					sizeOfMessage,
 				)
 			case targetEnumRedpanda:
 				benchmark = kafka.Benchmark(
 					config.RedpandaConfig,
-					numberOfMessages,
+					duration,
 					sizeOfMessage,
 				)
 			}
@@ -48,11 +48,11 @@ func init() {
 	rootCmd.AddCommand(benchmarkCmd)
 
 	benchmarkCmd.Flags().IntVarP(
-		&numberOfMessages,
-		"number",
-		"n",
-		100,
-		"Number of messages to be send",
+		&duration,
+		"duration",
+		"d",
+		30,
+		"Duration of the benchmark in seconds",
 	)
 	benchmarkCmd.Flags().
 		IntVarP(&sizeOfMessage,

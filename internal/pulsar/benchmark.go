@@ -12,7 +12,7 @@ import (
 
 func Benchmark(
 	pulsarConfig internal.PulsarConfig,
-	numberOfMessages int,
+	duration int,
 	sizeOfMessage int,
 ) internal.Benchmark {
 	client := GetClient(pulsarConfig)
@@ -21,7 +21,7 @@ func Benchmark(
 
 	producer, err := client.CreateProducer(pulsar.ProducerOptions{
 		Topic:              "myTopic",
-		MaxPendingMessages: numberOfMessages * 2,
+		MaxPendingMessages: 10000,
 	})
 
 	if err != nil {
@@ -34,8 +34,13 @@ func Benchmark(
 	rand.Read(value)
 
 	messagesSent := 0
-	ctx := context.Background()
+	errorCount := 0
 	done := make(chan bool)
+	completionChan := make(chan bool)
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(duration)*time.Second)
+
+	defer cancel()
 
 	msg := pulsar.ProducerMessage{
 		Payload: value,
@@ -43,31 +48,45 @@ func Benchmark(
 
 	start := time.Now()
 
-	errorCount := 0
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				done <- true
+				return
+			default:
+				producer.SendAsync(
+					ctx,
+					&msg,
+					func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
+						if err != nil {
+							errorCount++
+							log.Printf("Error sending message: %v", err)
+							completionChan <- true
+							return
+						}
+						messagesSent++
+						completionChan <- true
+					},
+				)
+			}
+		}
+	}()
 
-	for i := 0; i < numberOfMessages; i++ {
-		producer.SendAsync(
-			ctx,
-			&msg,
-			func(_ pulsar.MessageID, _ *pulsar.ProducerMessage, err error) {
-				if err != nil {
-					errorCount++
-					log.Fatal(err)
-				}
-
-				messagesSent++
-
-				if messagesSent >= numberOfMessages {
-					done <- true
-				}
-			},
-		)
-	}
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-completionChan:
+				continue
+			}
+		}
+	}()
 
 	<-done
-	duration := time.Since(start)
 
 	producer.Flush()
 
-	return internal.NewBenchmark(duration, numberOfMessages, sizeOfMessage, errorCount)
+	return internal.NewBenchmark(time.Since(start), messagesSent, sizeOfMessage, errorCount)
 }
