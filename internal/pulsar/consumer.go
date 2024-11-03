@@ -31,7 +31,7 @@ func Consume(pulsarConfig internal.PulsarConfig) {
 	for consumedMessage := range channel {
 		payload := consumedMessage.Message.Payload()
 
-		message := internal.Message{}
+		message := message{}
 		json.Unmarshal(payload, &message)
 
 		fmt.Printf(

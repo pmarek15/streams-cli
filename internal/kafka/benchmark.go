@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"log"
 	"stream/internal"
+	"sync/atomic"
 	"time"
 
 	"github.com/confluentinc/confluent-kafka-go/kafka"
@@ -24,10 +25,8 @@ func Benchmark(
 
 	defer producer.Close()
 
-	done := make(chan bool)
-
-	messageCount := 0
-	errorCount := 0
+	messageCount := uint64(0)
+	errorCount := uint64(0)
 
 	ctx, cancel := context.WithTimeout(
 		context.Background(),
@@ -41,11 +40,11 @@ func Benchmark(
 			msg := e.(*kafka.Message)
 
 			if msg.TopicPartition.Error != nil {
-				errorCount++
+				atomic.AddUint64(&errorCount, 1)
 				log.Printf("Error: %v", msg.TopicPartition.Error)
 				continue
 			}
-			messageCount++
+			atomic.AddUint64(&messageCount, 1)
 		}
 	}()
 
@@ -59,7 +58,6 @@ func Benchmark(
 	for {
 		select {
 		case <-ctx.Done():
-			done <- true
 			goto Complete
 		default:
 			producer.ProduceChannel() <- &kafka.Message{
@@ -70,14 +68,12 @@ func Benchmark(
 	}
 
 Complete:
-	<-done
-
 	producer.Flush(5000)
 
 	return internal.NewBenchmark(
 		time.Since(start),
-		messageCount,
+		int(atomic.LoadUint64(&messageCount)),
 		sizeOfMessage,
-		errorCount,
+		int(atomic.LoadUint64(&errorCount)),
 	)
 }
