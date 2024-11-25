@@ -37,14 +37,22 @@ func Benchmark(
 
 	go func() {
 		for e := range producer.Events() {
-			msg := e.(*kafka.Message)
+			switch e.(type) {
+			case *kafka.Message:
+				msg := e.(*kafka.Message)
 
-			if msg.TopicPartition.Error != nil {
+				if msg.TopicPartition.Error != nil {
+					atomic.AddUint64(&errorCount, 1)
+					log.Printf("Error: %v", msg.TopicPartition.Error)
+					continue
+				}
+				atomic.AddUint64(&messageCount, 1)
+			case kafka.Error:
 				atomic.AddUint64(&errorCount, 1)
-				log.Printf("Error: %v", msg.TopicPartition.Error)
-				continue
+				log.Printf("Error: %v", e)
+			default:
+				log.Printf("Ignored: %v", e)
 			}
-			atomic.AddUint64(&messageCount, 1)
 		}
 	}()
 
@@ -60,15 +68,19 @@ func Benchmark(
 		case <-ctx.Done():
 			goto Complete
 		default:
-			producer.ProduceChannel() <- &kafka.Message{
+			err := producer.Produce(&kafka.Message{
 				TopicPartition: kafka.TopicPartition{Topic: &topic},
 				Value:          value,
+			}, nil)
+			if err != nil {
+				//log.Printf("Failed to produce message: %v", err)
+				//atomic.AddUint64(&errorCount, 1)
 			}
 		}
 	}
 
 Complete:
-	producer.Flush(5000)
+	producer.Flush(60 * 1000)
 
 	return internal.NewBenchmark(
 		time.Since(start),

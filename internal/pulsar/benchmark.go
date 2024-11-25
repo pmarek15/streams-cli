@@ -21,7 +21,6 @@ func Benchmark(
 
 	producer, err := client.CreateProducer(pulsar.ProducerOptions{
 		Topic:              "myTopic",
-		MaxPendingMessages: 10000,
 	})
 
 	if err != nil {
