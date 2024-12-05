@@ -1,19 +1,50 @@
-# Streams-cli
+# Application Installation and Setup Instructions
 
-A simple cli app to test and benchmark data streaming technologies (Apache Kafka, Apache Pulsar, Redpanda).
+## Installation Steps
 
-
-## How to run the commands
-
-Clone the repo
-```
-$ git clone https://github.com/pmarek15/streams-cli.git
-$ cd streams-cli
+### 1. Download the Repository
+Clone the repository from GitHub using:
+```bash
+git clone https://github.com/pmarek15/streams-cli.git
 ```
 
-Build the binary
+### 2. Navigate to Code Directory
+Enter the project directory:
+```bash
+cd streams-cli
 ```
-$ go build
+
+### 3. Build the Application
+Compile the code:
+```bash
+go build
 ```
-Binary file (`stream`) will be created insite root directory of the repository. Simply run it inside of your terminal.
-For additional info you can use `--help` flag
+
+### 4. Configure the Application
+Copy the example configuration file with commented examples to create your config file:
+```bash
+cp config.example.yaml config.yaml
+```
+
+### 5. Configuration Setup
+Modify the config.yaml file according to your environment settings.
+
+## Usage Examples
+
+### Kafka Operations
+
+For producing messages to Kafka:
+```bash
+./stream produce -t kafka -f 1000
+```
+
+For consuming messages from Kafka:
+```bash
+./stream consume -t kafka -f 1000
+```
+
+For running a Kafka benchmark:
+```bash
+./stream benchmark -t kafka -d 30 -s 512
+```
+This command runs a 30-second benchmark with 512-byte messages.
